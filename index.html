@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>当たるまで回す機｜宝くじ・ガチャの確率シミュレーター</title>
+  <meta name="description" content="宝くじを公式の確率どおりに買い続けたら?ガチャは何回で出る?お金を使わずに確率の現実を体感する非公式シミュレーター。">
+  <meta name="theme-color" content="#14161c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2214%22 fill=%22%232f5bd3%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%226%22 fill=%22%23fff%22/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1 class="site-title">当たるまで回す機</h1>
+    <p class="site-lead">お金を1円も使わずに、宝くじとガチャの「確率の現実」を体感するシミュレーター</p>
+  </header>
+
+  <p class="disclaimer" role="note">
+    実際の宝くじ・ゲームとは関係のない<strong>非公式のシミュレーター</strong>です。購入をすすめるものではありません。
+    <a href="#sources" data-tab-link="sources">データの出典</a>
+  </p>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab is-active" role="tab" data-tab="lottery" aria-selected="true">宝くじ</button>
+    <button class="tab" role="tab" data-tab="gacha" aria-selected="false">ガチャ</button>
+    <button class="tab" role="tab" data-tab="sources" aria-selected="false">データの出典</button>
+  </nav>
+
+  <main>
+    <!-- ========== 宝くじ ========== -->
+    <section class="panel is-active" id="panel-lottery" role="tabpanel">
+      <div class="chips" id="lottery-chips" aria-label="宝くじの種類"></div>
+
+      <div class="card info-card" id="lottery-info"></div>
+
+      <div class="card controls">
+        <label class="field">
+          <span>1日に買う枚数(年数の計算用)</span>
+          <input type="number" id="per-day" min="1" max="100000" step="1" value="10" inputmode="numeric">
+        </label>
+        <div class="speed" role="radiogroup" aria-label="回す速さ">
+          <label><input type="radio" name="speed" value="normal" checked> ふつう</label>
+          <label><input type="radio" name="speed" value="max"> 最速</label>
+        </div>
+        <button class="btn btn-primary btn-big" id="btn-until-top">1等が出るまで回す</button>
+        <div class="btn-row">
+          <button class="btn" data-buy="10">+10枚</button>
+          <button class="btn" data-buy="1000">+1,000枚</button>
+          <button class="btn" data-buy="100000">+10万枚</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btn-stop" disabled>止める</button>
+          <button class="btn btn-ghost" id="btn-reset">リセット</button>
+        </div>
+      </div>
+
+      <div class="result-banner" id="lottery-banner" hidden></div>
+
+      <div class="stats" id="lottery-stats">
+        <div class="stat"><span class="stat-label">買った枚数</span><span class="stat-value" id="s-tickets">0枚</span></div>
+        <div class="stat"><span class="stat-label">使った金額</span><span class="stat-value" id="s-spent">0円</span></div>
+        <div class="stat"><span class="stat-label">当たった金額</span><span class="stat-value" id="s-won">0円</span></div>
+        <div class="stat"><span class="stat-label">収支</span><span class="stat-value" id="s-balance">0円</span></div>
+        <div class="stat"><span class="stat-label">回収率</span><span class="stat-value" id="s-rate">-</span></div>
+        <div class="stat"><span class="stat-label" id="s-time-label">毎日10枚なら</span><span class="stat-value" id="s-time">-</span></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">累計の収支</h2>
+        <canvas id="lottery-chart" class="chart" height="220" aria-label="累計の収支グラフ"></canvas>
+        <p class="chart-note">横 = 買った枚数、縦 = 収支(当たった金額 − 使った金額)</p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">等級ごとの結果</h2>
+        <div class="table-wrap">
+          <table class="tier-table" id="tier-table">
+            <thead><tr><th>等級</th><th>当せん金</th><th>確率</th><th>当たり</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <ul class="notes" id="lottery-notes"></ul>
+      </div>
+
+      <div class="share-row">
+        <button class="btn btn-share" id="share-lottery">結果をXで共有</button>
+      </div>
+
+      <div class="ad-slot" aria-hidden="true"><!-- 広告枠(v0.1では空) --></div>
+    </section>
+
+    <!-- ========== ガチャ ========== -->
+    <section class="panel" id="panel-gacha" role="tabpanel" hidden>
+      <div class="card controls">
+        <p class="card-lead">特定のゲームとは関係のない、数字だけの汎用ガチャです。</p>
+        <div class="field-grid">
+          <label class="field">
+            <span>排出率(%)</span>
+            <input type="number" id="g-rate" min="0.0001" max="100" step="0.001" value="0.6" inputmode="decimal">
+          </label>
+          <label class="field">
+            <span>1回の値段(円)</span>
+            <input type="number" id="g-cost" min="1" max="100000" step="1" value="300" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span>天井(回、0 = なし)</span>
+            <input type="number" id="g-pity" min="0" max="100000" step="1" value="0" inputmode="numeric">
+          </label>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="g-single">1回</button>
+          <button class="btn" id="g-ten">10連</button>
+          <button class="btn btn-primary" id="g-until">出るまで回す</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="g-reset">リセット</button>
+        </div>
+      </div>
+
+      <div class="result-banner" id="gacha-banner" hidden></div>
+
+      <div class="stats">
+        <div class="stat"><span class="stat-label">回した回数</span><span class="stat-value" id="g-pulls">0回</span></div>
+        <div class="stat"><span class="stat-label">使った金額</span><span class="stat-value" id="g-spent">0円</span></div>
+        <div class="stat"><span class="stat-label">当たり</span><span class="stat-value" id="g-hits">0回</span></div>
+        <div class="stat"><span class="stat-label">天井まで</span><span class="stat-value" id="g-to-pity">-</span></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">当たった回</h2>
+        <ol class="hit-log" id="g-log"><li class="muted">まだ当たりはありません</li></ol>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">1万人が「出るまで」回したら</h2>
+        <canvas id="gacha-chart" class="chart" height="200" aria-label="必要な回数の分布"></canvas>
+        <div class="crowd" id="g-crowd"></div>
+      </div>
+
+      <div class="share-row">
+        <button class="btn btn-share" id="share-gacha">結果をXで共有</button>
+      </div>
+
+      <div class="ad-slot" aria-hidden="true"><!-- 広告枠(v0.1では空) --></div>
+    </section>
+
+    <!-- ========== 出典 ========== -->
+    <section class="panel" id="panel-sources" role="tabpanel" hidden>
+      <div class="card">
+        <h2 class="card-title">このサイトについて</h2>
+        <p>実際の宝くじ・発売元・ゲームとは関係のない<strong>非公式のシミュレーター</strong>です。抽せんはこの端末の中で乱数を使って行っているだけで、本物のくじを買うことも、お金が動くこともありません。</p>
+        <p>宝くじの確率・当せん金・本数は、下の公式発表をそのまま使っています。ロト・ナンバーズの当せん金は公式の「理論値」で、実際は毎回変わります。</p>
+      </div>
+      <div class="card">
+        <h2 class="card-title">データの出典</h2>
+        <ul class="source-list" id="source-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>当たるまで回す機 v0.1 — 非公式シミュレーター。外部への送信はしません。</p>
+  <p style="text-align:center;font-size:.85rem;margin:16px 0;opacity:.8">ほかのサイト → <a href="https://jomo-play.github.io/">jomo-play.github.io</a></p>
+</footer>
+
+  <script src="data/lotteries.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+<script data-goatcounter="https://jomo-play.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
